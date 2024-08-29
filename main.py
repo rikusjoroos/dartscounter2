@@ -73,6 +73,13 @@ class Game:
         return True
 
     def check_winner(self, window):
+        """
+        Checks if the current player has won and updates the game state if so.
+
+        Args:
+            window (sg.Window): The PySimpleGUI window object.
+        """
+
         player = self.player_list[self.turn_idx]
         if player.points == 0:
             playername = window[f'-PLAYER{self.turn_idx+1}NAME-'].get()
@@ -100,6 +107,13 @@ class Game:
                 player.match_scores.append(0)
     
     def update_stats(self, window):
+        """
+        Updates the statistics for all players.
+
+        Args:
+            window (sg.Window): The PySimpleGUI window object.
+        """
+
         for i in range(self.number_of_players):
             player = self.player_list[i]
             if len(player.leg_scores) > 0:
@@ -108,14 +122,23 @@ class Game:
                 player.lscore = player.leg_scores[-1]
             if len(player.match_scores) > 0:
                 player.match_avg = sum(player.match_scores) / len(player.match_scores)
+                player.tons = sum(1 for x in player.match_scores if x > 99)
 
             window[f'-P{i + 1}AVG-'].update(str(round(player.avg, 2)))
             window[f'-P{i + 1}MATCHAVG-'].update(str(round(player.match_avg, 2)))
             window[f'-P{i + 1}FIRSTNINEAVG-'].update(str(round(player.firstnine, 2)))
             window[f'-P{i + 1}CO-'].update(str(player.hco))
             window[f'-P{i + 1}LSCORE-'].update(str(player.lscore))
+            window[f'-P{i + 1}TONS-'].update(str(player.tons))
     
     def go_back(self, window):
+        """
+        Reverts the last turn's score and updates the window.
+
+        Args:
+            window (sg.Window): The PySimpleGUI window object.
+        """
+
         print(self.turn_idx)
         if len(self.player_list[self.turn_idx-1].leg_scores) == 0:
             return
@@ -142,6 +165,13 @@ class Game:
         
 class Player:
     def __init__(self, points: int):
+        """
+        Initializes the Player class.
+
+        Args:
+            points (int): The starting points for the player.
+        """
+
         self.points = points
         self.match_scores = []
         self.leg_scores = []
@@ -152,10 +182,22 @@ class Player:
         self.legwins = 0
         self.hco = 0
         self.lscore = 0
+        self.tons = 0
 
 
 def create_layout_for_players(window, num_players, startingpoints):
-    # Luodaan layout pelaajien määrän perusteella
+    """
+    Creates the layout for the players based on the number of players and starting points.
+
+    Args:
+        window (sg.Window): The PySimpleGUI window object.
+        num_players (int): Number of players.
+        startingpoints (int): Starting points for each player.
+
+    Returns:
+        list: Layout list.
+    """
+
     if scale == 'Normal':
         print(scale)
         pointFont = ("Arial", 60)
@@ -186,6 +228,7 @@ def create_layout_for_players(window, num_players, startingpoints):
         [sg.Text("Match AVG:"), sg.Text("0", key = f'-P{i+1}MATCHAVG-')],
         [sg.Text("F9 AVG:"), sg.Text("0", key = f'-P{i+1}FIRSTNINEAVG-')],
         [sg.Text("Highest CO:"), sg.Text("0", key = f'-P{i+1}CO-')],
+        [sg.Text("Tons:"), sg.Text("0", key = f'-P{i+1}TONS-')],
         [sg.Text("Latest Score:"), sg.Text("0", key = f'-P{i+1}LSCORE-')]
         ]
             
@@ -205,6 +248,13 @@ def create_layout_for_players(window, num_players, startingpoints):
     return layout
 
 def new_game():
+    """
+    Opens new window where user can choose number of players and starting points.
+    Returns:
+        int: Starting points.
+        int: Number of players
+    """
+
     numberofplayers = 1
     startingpoints = 501
     values = [1,2,3,4,5]
