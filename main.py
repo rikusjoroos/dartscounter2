@@ -25,6 +25,7 @@ class Game:
         self.starting_points = points
         self.player_list = []
         self.turn_idx = 0
+        self.started_idx = 0
         for player in range(number_of_players):
             player = Player(points)
             self.player_list.append(player)
@@ -39,11 +40,10 @@ class Game:
             window (sg.Window): The PySimpleGUI window object.
         """
         self.turn_idx += 1
-        if self.turn_idx > self.number_of_players -1:
+        if self.turn_idx >= self.number_of_players:
             self.turn_idx = 0
         for i in range(self.number_of_players):
             window[f'-POINTSLEFT{i+1}-'].update(background_color = sg.theme_background_color(), text_color = sg.theme_text_color())
-            
         window['-TURN-'].update(f"Player {self.turn_idx+1} points")
         window[f'-POINTSLEFT{self.turn_idx+1}-'].update(background_color = 'white', text_color = 'black')
 
@@ -86,25 +86,36 @@ class Game:
             answer = sg.popup_yes_no(playername + " won?", title = "Winner?")
             if answer == "Yes":
                 self.started_idx += 1
-                if self.started_idx > self.number_of_players - 1:
+                if self.started_idx >= self.number_of_players:
                     self.started_idx = 0
+
                 player.legwins += 1
                 window[f'-PLAYER{self.turn_idx + 1}LEGWIN-'].update(str(player.legwins))
                 if player.hco < player.leg_scores[-1]:
                     player.hco = player.leg_scores[-1]
-                self.turn_idx = self.started_idx -1
+
+                self.turn_idx = self.started_idx
+
                 for i in range(self.number_of_players):
                     window[f'-POINTSLEFT{i+1}-'].update(str(self.starting_points))
                     self.player_list[i].points = self.starting_points
                     self.player_list[i].leg_scores = []
+                    window[f'-POINTSLEFT{i+1}-'].update(background_color = sg.theme_background_color(), text_color = sg.theme_text_color())
 
+                window['-TURN-'].update(f"Player {self.turn_idx+1} points")
+                window[f'-POINTSLEFT{self.turn_idx+1}-'].update(background_color = 'white', text_color = 'black')
                 self.update_stats(window)
+
+                return True
 
             if answer == "No":
                 player.leg_scores.pop()
                 player.match_scores.pop()
                 player.leg_scores.append(0)
                 player.match_scores.append(0)
+
+                return False
+        
     
     def update_stats(self, window):
         """
@@ -139,11 +150,10 @@ class Game:
             window (sg.Window): The PySimpleGUI window object.
         """
 
-        print(self.turn_idx)
         if len(self.player_list[self.turn_idx-1].leg_scores) == 0:
             return
 
-        if self.turn_idx == 0:
+        if self.turn_idx <= 0:
             self.turn_idx = self.number_of_players - 1
         else:
             self.turn_idx -= 1
@@ -199,12 +209,10 @@ def create_layout_for_players(window, num_players, startingpoints):
     """
 
     if scale == 'Normal':
-        print(scale)
         pointFont = ("Arial", 60)
         playerFont = ("Arial", 30)
         inputFont = ("Arial", 40)
     elif scale == 'Tight':
-        print(scale)
         pointFont = ("Arial", 20)
         playerFont = ("Arial", 10)
         inputFont = ("Arial", 20)
@@ -299,20 +307,18 @@ def main():
                 game_layout = create_layout_for_players(window, numberofplayers, str(startingpoints))
                 window = sg.Window('Darts Counter', layout = game_layout, resizable=True, finalize=True)
             game.create_players(numberofplayers, int(startingpoints), window)
-            print(numberofplayers, startingpoints)
         elif event == 'Subtract':
             if game.scored(window) == False:
                 continue
-            game.check_winner(window)
-            game.change_turn(window)
+            winner_found = game.check_winner(window)
+            if not winner_found:
+                game.change_turn(window)
         elif event == "Back":
             game.go_back(window)
         elif event == 'Tight':
             scale = 'Tight'
-            print(scale)
         elif event == 'Normal':
             scale = 'Normal'
-            print(scale)
 
 
     window.close()
