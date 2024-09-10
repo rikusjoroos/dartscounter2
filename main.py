@@ -109,11 +109,13 @@ class Game:
                 return True
 
             if answer == "No":
-                player.leg_scores.pop()
+                player.points += player.leg_scores.pop()
                 player.match_scores.pop()
                 player.leg_scores.append(0)
                 player.match_scores.append(0)
-
+                window[f'-POINTSLEFT{self.turn_idx+1}-'].update(str(player.points))
+                window['-POINTS-'].update("")
+                self.update_stats(window)
                 return False
         
     
@@ -297,26 +299,34 @@ def main():
     game = Game()
     menu_def = [['File', ['New Game']],['Scale', ['Tight', 'Normal']]]
     window = sg.Window('Darts Counter', layout=[[sg.Menu(menu_def, tearoff=False,key='-MENU BAR-')]], resizable=True, finalize=True, size=(200,200))
+
     while True:
         event, values = window.read()
         if event == sg.WINDOW_CLOSED:
             break
+
         elif event == 'New Game':
             numberofplayers, startingpoints = new_game()
             if numberofplayers is not None:
                 game_layout = create_layout_for_players(window, numberofplayers, str(startingpoints))
                 window = sg.Window('Darts Counter', layout = game_layout, resizable=True, finalize=True)
             game.create_players(numberofplayers, int(startingpoints), window)
+
         elif event == 'Subtract':
             if game.scored(window) == False:
                 continue
+
             winner_found = game.check_winner(window)
+
             if not winner_found:
                 game.change_turn(window)
+
         elif event == "Back":
             game.go_back(window)
+
         elif event == 'Tight':
             scale = 'Tight'
+
         elif event == 'Normal':
             scale = 'Normal'
 
