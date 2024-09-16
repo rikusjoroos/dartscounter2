@@ -61,7 +61,7 @@ class Game:
             points_scored = int(window[f'-POINTS-'].get())
         except ValueError:
             return False
-        if points_scored > 180:
+        if points_scored > 180 or points_scored < 0:
             return False
         
         player = self.player_list[self.turn_idx]
