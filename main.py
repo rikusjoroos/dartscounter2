@@ -63,8 +63,15 @@ class Game:
             return False
         if points_scored > 180:
             return False
+        
         player = self.player_list[self.turn_idx]
         player.points -= points_scored
+
+        # This checks if player's points are 1 or below 0
+        if player.points == 1 or player.points < 0:
+            player.points += points_scored
+            points_scored = 0
+
         player.leg_scores.append(points_scored)
         player.match_scores.append(points_scored)
         window[f'-POINTSLEFT{self.turn_idx+1}-'].update(str(player.points))
@@ -78,6 +85,9 @@ class Game:
 
         Args:
             window (sg.Window): The PySimpleGUI window object.
+        
+        Returns:
+            bool: True if player won, if doesn't then False
         """
 
         player = self.player_list[self.turn_idx]
