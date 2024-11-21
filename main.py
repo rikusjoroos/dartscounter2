@@ -1,4 +1,9 @@
 import PySimpleGUI as sg
+try:
+    import pygame
+except Exception as e:
+    pass
+
 
 scale = "Normal"
 
@@ -64,6 +69,7 @@ class Game:
         if points_scored > 180 or points_scored < 0:
             return False
         
+        
         player = self.player_list[self.turn_idx]
         player.points -= points_scored
 
@@ -71,9 +77,35 @@ class Game:
         if player.points == 1 or player.points < 0:
             player.points += points_scored
             points_scored = 0
+        
+        if points_scored == 180:
+            try:
+                pygame.mixer.init()
+
+                # Lataa äänitiedosto (tiedoston polku)
+                pygame.mixer.music.load("voice.wav")
+
+                # Toista tiedosto
+                pygame.mixer.music.play()
+
+                # Odota, että musiikki päättyy
+                while pygame.mixer.music.get_busy():
+                    pygame.time.Clock().tick(10)
+
+                # Lopeta äänimixeri
+
+                pygame.mixer.quit()
+
+            except Exception as e:
+                print(e)
+                pass
+        
 
         player.leg_scores.append(points_scored)
         player.match_scores.append(points_scored)
+        if len(player.leg_scores) <= 3:
+            player.match_firstninescores.append(player.leg_scores[-1])
+        print(player.match_firstninescores)
         window[f'-POINTSLEFT{self.turn_idx+1}-'].update(str(player.points))
         window['-POINTS-'].update("")
         self.update_stats(window)
@@ -143,16 +175,21 @@ class Game:
                 player.firstnine = sum(player.leg_scores[:3]) / len(player.leg_scores[:3])
                 player.avg = sum(player.leg_scores) / len(player.leg_scores)
                 player.lscore = player.leg_scores[-1]
+                player.visits = len(player.leg_scores)
+                player.match_firstnine = sum(player.match_firstninescores) / len(player.match_firstninescores)
             if len(player.match_scores) > 0:
                 player.match_avg = sum(player.match_scores) / len(player.match_scores)
                 player.tons = sum(1 for x in player.match_scores if x > 99)
+            
 
             window[f'-P{i + 1}AVG-'].update(str(round(player.avg, 2)))
             window[f'-P{i + 1}MATCHAVG-'].update(str(round(player.match_avg, 2)))
+            window[f'-P{i + 1}MATCHFIRSTNINEAVG-'].update(str(round(player.match_firstnine, 2)))
             window[f'-P{i + 1}FIRSTNINEAVG-'].update(str(round(player.firstnine, 2)))
             window[f'-P{i + 1}CO-'].update(str(player.hco))
             window[f'-P{i + 1}LSCORE-'].update(str(player.lscore))
             window[f'-P{i + 1}TONS-'].update(str(player.tons))
+            window[f'-P{i + 1}VISITS-'].update(str(player.visits))
     
     def go_back(self, window):
         """
@@ -172,8 +209,12 @@ class Game:
 
         player = self.player_list[self.turn_idx]
         if len(player.leg_scores) > 0:
+            if len(player.leg_scores) <= 3:
+                player.match_firstninescores.pop()
             player.lscore = player.leg_scores.pop()
             player.points += player.lscore
+
+
 
         if len(player.match_scores) > 0:
             player.match_scores.pop()
@@ -201,10 +242,13 @@ class Player:
         self.avg = 0
         self.match_avg = 0
         self.firstnine = 0
+        self.match_firstninescores = []
+        self.match_firstnine = 0
         self.legwins = 0
         self.hco = 0
         self.lscore = 0
         self.tons = 0
+        self.visits = 0
 
 
 def create_layout_for_players(window, num_players, startingpoints):
@@ -244,11 +288,13 @@ def create_layout_for_players(window, num_players, startingpoints):
         player_layout = [[sg.Text(f"Player {i+1}")],
         [sg.InputText(size=(8,1), font=playerFont, key = f'-PLAYER{i+1}NAME-'), sg.Text("0", font=playerFont, key = f'-PLAYER{i+1}LEGWIN-')],
         [sg.Text(startingpoints, key = f'-POINTSLEFT{i+1}-', font = pointFont, enable_events=True)],
-        [sg.Text("AVG:"),sg.Text("0", key = f'-P{i+1}AVG-')],
+        [sg.Text("Leg AVG:"),sg.Text("0", key = f'-P{i+1}AVG-')],
+        [sg.Text("Leg F9 AVG:"), sg.Text("0", key = f'-P{i+1}FIRSTNINEAVG-')],
+        [sg.Text("Leg Visits:"), sg.Text("0", key = f'-P{i+1}VISITS-')],
         [sg.Text("Match AVG:"), sg.Text("0", key = f'-P{i+1}MATCHAVG-')],
-        [sg.Text("F9 AVG:"), sg.Text("0", key = f'-P{i+1}FIRSTNINEAVG-')],
-        [sg.Text("Highest CO:"), sg.Text("0", key = f'-P{i+1}CO-')],
-        [sg.Text("Tons:"), sg.Text("0", key = f'-P{i+1}TONS-')],
+        [sg.Text("Match F9 AVG:"), sg.Text("0", key = f'-P{i+1}MATCHFIRSTNINEAVG-')],
+        [sg.Text("Match Highest CO:"), sg.Text("0", key = f'-P{i+1}CO-')],
+        [sg.Text("Match Tons:"), sg.Text("0", key = f'-P{i+1}TONS-')],
         [sg.Text("Latest Score:"), sg.Text("0", key = f'-P{i+1}LSCORE-')]
         ]
             
